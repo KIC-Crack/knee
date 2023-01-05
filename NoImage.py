@@ -517,7 +517,7 @@ class NoImageWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onPrepare(self):
     #slicer.util.loadScene(self.FilePath+'/cj/cj.mrml')
-    slicer.util.loadScene("D:/data/1229/1229.mrml")
+    slicer.util.loadScene("D:/data/cj1/cj1.mrml")
     Node1 = slicer.mrmlScene.GetFirstNodeByClass('vtkMRMLIGTLConnectorNode')
     Node1.Start()
     w = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLFiducialRegistrationWizardNode")
@@ -1920,7 +1920,6 @@ class NoImageWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.EtctMove('Tibia','TibiaToTracker')
       else:
         self.NodeMove('Tibia','TibiaToTracker')
-      slicer.util.getNode('mp').SetDisplayVisibility(False)
       slicer.util.getNode('NeedleModel').SetDisplayVisibility(False)
       slicer.util.getNode('From').SetDisplayVisibility(False)
       slicer.util.getNode('To').SetDisplayVisibility(False)
@@ -7556,18 +7555,18 @@ class NoImageWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   #   n = [B2 * C3 - C2 * B3, B3 * C1 - C3 * B1, B1 * C2 - C1 * B2]  # 已知该平面的两个向量,求该平面的法向量的叉乘公式
   #   return n
 
-  # # 两个平面的夹角
-  # def angle(self, P1, P2):
-  #   import math
-  #   x1, y1, z1 = P1  # 该平面的法向量的xyz坐标
-  #   x2, y2, z2 = P2  # 另一个平面的法向量的xyz坐标
-  #   cosθ = ((x1 * x2) + (y1 * y2) + (z1 * z2)) / (
-  #           ((x1 ** 2 + y1 ** 2 + z1 ** 2) ** 0.5) * ((x2 ** 2 + y2 ** 2 + z2 ** 2) ** 0.5))  # 平面向量的二面角公式
-  #   degree = math.degrees(math.acos(cosθ))
-  #   if degree > 90:  # 二面角∈[0°,180°] 但两个平面的夹角∈[0°,90°]
-  #     degree = 180 - degree
+  # 两个平面的夹角
+  def angle(self, P1, P2):
+    import math
+    x1, y1, z1 = P1  # 该平面的法向量的xyz坐标
+    x2, y2, z2 = P2  # 另一个平面的法向量的xyz坐标
+    cosθ = ((x1 * x2) + (y1 * y2) + (z1 * z2)) / (
+            ((x1 ** 2 + y1 ** 2 + z1 ** 2) ** 0.5) * ((x2 ** 2 + y2 ** 2 + z2 ** 2) ** 0.5))  # 平面向量的二面角公式
+    degree = math.degrees(math.acos(cosθ))
+    if degree > 90:  # 二面角∈[0°,180°] 但两个平面的夹角∈[0°,90°]
+      degree = 180 - degree
 
-  #   return str(round(degree, 5))
+    return str(round(degree, 5))
 
   # 删除节点
   def DeleteNode(self, node):
@@ -7604,8 +7603,8 @@ class NoImageWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.DeleteNode('切割6')
     self.DeleteNode('部件6')
     self.DeleteNode('动态切割6')
-    self.DeleteNode('内侧高点')
-    self.DeleteNode('外侧高点')
+    # self.DeleteNode('内侧高点')
+    # self.DeleteNode('外侧高点')
     # 将变换相乘 得到股骨变换和胫骨变换
     try:
       transform = slicer.util.arrayFromTransformMatrix(slicer.util.getNode('变换'))
@@ -7614,24 +7613,28 @@ class NoImageWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       transform3 = slicer.util.arrayFromTransformMatrix(slicer.util.getNode('变换_3'))
       transform4 = slicer.util.arrayFromTransformMatrix(slicer.util.getNode('变换_4'))
       transform5 = slicer.util.arrayFromTransformMatrix(slicer.util.getNode('变换_5'))
-      transform6 = slicer.util.arrayFromTransformMatrix(slicer.util.getNode('变换_6'))
+      #transform6 = slicer.util.arrayFromTransformMatrix(slicer.util.getNode('变换_6'))
       transform_R = slicer.util.arrayFromTransformMatrix(slicer.util.getNode('变换_R'))
       transform_jg = slicer.util.arrayFromTransformMatrix(slicer.util.getNode('变换_胫骨'))
       transform_ys = slicer.util.arrayFromTransformMatrix(slicer.util.getNode('变换_约束'))
       transform_tmp = slicer.util.arrayFromTransformMatrix(slicer.util.getNode('变换_临时'))
       FemurTrans = np.dot(np.dot(np.dot(np.dot(transform, transform1), transform_tmp), transform2), transform_R)
-      TibiaTrans = np.dot(np.dot(np.dot(np.dot(transform6, transform3), transform4), transform_jg), transform_ys)
-      FemurTransform = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLTransformNode", '股骨变换')
+      TibiaTrans = np.dot(np.dot(np.dot(transform3, transform4), transform_jg), transform_ys)
+      FemurTransform = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLTransformNode", '股骨假体变换')
       FemurTransform.SetAndObserveMatrixTransformToParent(slicer.util.vtkMatrixFromArray(FemurTrans))
-      TibiaTransform = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLTransformNode", '胫骨变换')
+      TibiaTransform = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLTransformNode", '胫骨假体变换')
       TibiaTransform.SetAndObserveMatrixTransformToParent(slicer.util.vtkMatrixFromArray(TibiaTrans))
       self.jiatiload.SetAndObserveTransformNodeID(FemurTransform.GetID())
+      slicer.util.getNode(self.TibiaJiaTiload.GetName()).SetAndObserveTransformNodeID(TibiaTransform.GetID())
+
       transNode1 = slicer.util.getNode('DianjiToTracker1')
       transNode2 = slicer.util.getNode('TibiaToTracker')
       FemurTransform.SetAndObserveTransformNodeID(transNode1.GetID())
       TibiaTransform.SetAndObserveTransformNodeID(transNode2.GetID())
-      slicer.util.getNode('Femur').SetAndObserveTransformNodeID(FemurTransform.GetID())
-      slicer.util.getNode('Tibia').SetAndObserveTransformNodeID(TibiaTransform.GetID())
+
+
+      slicer.util.getNode('Femur').SetAndObserveTransformNodeID(transNode1.GetID())
+      slicer.util.getNode('Tibia').SetAndObserveTransformNodeID(transNode2.GetID())
 
     except Exception as e:
       print(e)
@@ -7642,28 +7645,29 @@ class NoImageWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.DeleteNode('变换_3')
     self.DeleteNode('变换_4')
     self.DeleteNode('变换_5')
-    self.DeleteNode('变换_6')
+    self.DeleteNode('变换_R')
     self.DeleteNode('变换_胫骨')
     self.DeleteNode('变换_约束')
     self.DeleteNode('变换_临时')
     self.DeleteNode('股骨截骨面')
+    self.DeleteNode('股骨第一截骨面')
     self.DeleteNode('股骨第二截骨面')
     self.DeleteNode('股骨第三截骨面')
     self.DeleteNode('胫骨截骨面')
-    self.DeleteNode('股骨头球心')
-    self.DeleteNode('开髓点')
-    self.DeleteNode('H点')
-    self.DeleteNode('A点')
-    self.DeleteNode('外侧远端')
-    self.DeleteNode('内侧远端')
-    self.DeleteNode('外侧皮质高点')
-    self.DeleteNode('外侧后髁')
-    self.DeleteNode('内侧后髁')
-    self.DeleteNode('内侧凹点')
-    self.DeleteNode('外侧凸点')
-    self.DeleteNode('胫骨隆凸')
-    self.DeleteNode('胫骨结节')
-    self.DeleteNode('踝穴中心')
+    # self.DeleteNode('股骨头球心')
+    # self.DeleteNode('开髓点')
+    # self.DeleteNode('H点')
+    # self.DeleteNode('A点')
+    # self.DeleteNode('外侧远端')
+    # self.DeleteNode('内侧远端')
+    # self.DeleteNode('外侧皮质高点')
+    # self.DeleteNode('外侧后髁')
+    # self.DeleteNode('内侧后髁')
+    # self.DeleteNode('内侧凹点')
+    # self.DeleteNode('外侧凸点')
+    # self.DeleteNode('胫骨隆凸')
+    # self.DeleteNode('胫骨结节')
+    # self.DeleteNode('踝穴中心')
     self.DeleteNode('Femur_ZAxis')
     self.DeleteNode('Femur_XAxis')
     self.DeleteNode('Femur_ZJtAxis')
